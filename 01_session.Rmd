@@ -2,7 +2,9 @@
 title: "session1"
 author: "Tim Riffe"
 date: "2026-07-06"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -115,12 +117,82 @@ asfr |>
   summarize(tfr = sum(asfr))
 ```
 
+# Exercise: calculate age-specific mortality rates
+Join exposure and death data (by age and sex), calculate rates. Note, we still haven't reshaped the death data! Then make a log10 plot of the mortality rates :-)
+ 
+ 
+```{r}
+mort <- 
+  D |> 
+  select(-open_interval) |> 
+  pivot_longer(female:total,
+               names_to = "sex",
+               values_to = "deaths") |> 
+  left_join(E, by = join_by(year, age, sex)) |> 
+  select(!starts_with("pop")) |> 
+  mutate(mx = deaths / exposure) 
+```
+ 
+We can calculate the CDR with this too:
 
+```{r}
+cdr <-
+mort |> 
+  summarize(CDR = 1000 * sum(deaths) / sum(exposure),
+            .by = c(sex))
+```
 
+# visualize age-specific rates:
 
+```{r}
+mort |> 
+  filter(mx>0) |> 
+  ggplot(mapping = aes(x = age, y = mx, color = sex)) +
+  geom_line() +
+  scale_y_log10() +
+  # fixed!
+  geom_hline(mapping = aes(yintercept = CDR/1000, color = sex), data = cdr)
+```
 
+# NEW: how do the age-specific sex weights change?
 
+```{r}
+mort |> 
+  select(sex,age,exposure) |> 
+  pivot_wider(names_from = sex, values_from = exposure) |> 
+  mutate(p_male = male / total) |> 
+  ggplot(aes(x = age)) +
+  geom_ribbon(aes(ymin= rep(0,111),ymax=p_male), fill = "#11A1FF") +
+  geom_ribbon(aes(ymin = p_male, ymax = rep(1,111)), fill = "#BB00A1") +
+  labs(y = "fraction") +
+  annotate("text",x=13,y=.9,label="Females",color = "white",size=8) +
+  annotate("text",x=13,y=.1,label="Males",color = "white",size=8)
+```
 
+# Exercise
+ 
+Calculate TFR and MAB by year for these data:
+
+```{r, message = FALSE}
+library(tidyverse)
+library(janitor)
+B <- read_csv("https://github.com/timriffe/BSSD2026Module2/raw/master/data/ES_B.csv.gz",
+              show_col_types = FALSE) |> 
+  clean_names()
+P <- read_csv("https://github.com/timriffe/BSSD2026Module2/raw/master/data/ES_P.csv.gz",
+              show_col_types = FALSE)|> 
+  clean_names()
+```
+
+You'll need to calculate exposures, merge w births, then calculate rates. Recall TFR is:
+
+$$ TFR = \sum_x F_x$$
+where $F_x$ are age-specific fertility rates (ASFR). Mean age at childbearing (MAB) is a weighted average of... age. The thing being weighted is age itself, and the weights are either rates or births (results will vary a bit). The formula is something like this:
+
+$$ MAB = \frac{\sum (age + 0.5)\cdot w}{\sum w}$$
+where $w$ is either `asfr` or `births`. You can make TFR and MAB in the same `summarize()` call...
+
+Then please plot them. I will also cover solutions from the handout for day 1.
 
 
 
