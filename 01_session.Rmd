@@ -65,11 +65,56 @@ lead(x)
 E <- 
   P_long |> 
   arrange(sex, age, year) |> 
-  group_by(sex, age) |> 
-  mutate(pop2 = lead(pop)) |> 
+  # group_by(sex, age) |> 
+  mutate(pop2 = lead(pop),
+         .by = c(sex, age)) |>  
   filter(!is.na(pop2)) |> 
-  mutate(exposure = (pop + pop2) / 2)
+  mutate(exposure = (pop + pop2) / 2) # same as ungroup()
 ```
+
+Usually, classically, I would do `group_by(bla, bla) |> do thing |> ungroup()`. But the `ungroup()` part can be handled with `.groups = "drop"` inside a summarize call and then you don't need `ungroup()` OR, and this is even more parsimonious, you can just use groups temporarily by using the `.by` arg of `mutate()` or `summarize()`. `.by` is now part of the main tidyverse corpus, and is no longer experimental, so it's now the easiest choice unless of course you want to recycle groups over sequential operations.
+
+# task 2: calculate fertility rates
+
+```{r}
+E |> 
+  filter(sex == "total") |> 
+  left_join(B, by = c("age","year")) |> 
+  mutate(total = if_else(is.na(total), 0, total)) |> 
+  summarize(B = sum(total),
+            E = sum(exposure)) |> 
+  mutate(CBR = 1000 * B / E)
+```
+
+# exercise: calculate age-specific fertility rates
+These have females in the denominator, match to age, and note you want the age range given in the births file (`B`). This will require `filter()`, `*_join()` and `mutate()`. Keep it all together in a single pipeline :-). 5 min. Someone paste the solution here: <https://tinyurl.com/6ec2zfyy>
+```{r}
+asfr <- E |> 
+  filter(sex == "female") |> 
+  right_join(
+    B |> select(-year, -open_interval),
+    by = join_by(age)
+  ) |>
+  mutate(
+    asfr = total / exposure
+  )
+```
+
+visualize them:
+
+```{r}
+asfr |> 
+  ggplot() +
+  aes(x = age, y = asfr) +
+  geom_step(linewidth = 1.05)
+
+```
+
+```{r}
+asfr |> 
+  summarize(tfr = sum(asfr))
+```
+
 
 
 
