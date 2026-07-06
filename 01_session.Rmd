@@ -1,0 +1,87 @@
+---
+title: "session1"
+author: "Tim Riffe"
+date: "2026-07-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+When I write here, this is just like writing in Word, or whatever.
+
+Ctrl + Alt + i to make an R chunk. Cmnd + option + i on mac.
+
+What we write inside this R chunk is executed behind the scenes, and it might produce output, and it might update objects that we have in memory for this session
+```{r}
+library(tidyverse)
+# install.packages("tidyverse")
+B <- read_csv("https://raw.githubusercontent.com/timriffe/BSSD2026Module2/refs/heads/master/data/ES_B2014.csv")
+D <- read_csv("https://raw.githubusercontent.com/timriffe/BSSD2026Module2/refs/heads/master/data/ES_D2014.csv")
+P <- read_csv("https://raw.githubusercontent.com/timriffe/BSSD2026Module2/refs/heads/master/data/ES_P2014.csv")
+
+```
+
+# timeout to install latex
+
+This is a cheap solution for being able to build your document to pdf output, incase LaTeX isn't installed already on your machine:
+```{r}
+# install.packages("tinytex")
+```
+Note, I comment out the `install.packages()` line because otherwise it would reinstall each time I compile this, which is annoying.
+
+# task 1: calculate exposures
+
+ `|>` is a basic R _pipe_, and it works very similarly to `%>%` which might be the default pipe in.
+```{r}
+P_long <- 
+  P |> 
+  select(-open_interval) |> 
+  pivot_longer(c(female, male, total),
+               names_to = "sex",
+               values_to = "pop")
+```
+
+First visualization of the exercise: put year 2014 and 2015 next to each other (`pivot_wider()`) and then take the mean `mutate()`. Pro: this might be how you'd do it in a spreadsheet? Easy to wrap your mind around.
+
+```{r}
+P_long |> 
+  pivot_wider(names_from = year,
+              values_from = pop) |> 
+  mutate(exposure = (`2014` + `2015`) / 2)
+```
+
+Cons: what if we have a longer time series? This gets very wide and arduous to type out! We need another strategy:
+
+General approach (use `lead()`)
+
+```{r}
+x <- 0:10
+lead(x)
+
+E <- 
+  P_long |> 
+  arrange(sex, age, year) |> 
+  group_by(sex, age) |> 
+  mutate(pop2 = lead(pop)) |> 
+  filter(!is.na(pop2)) |> 
+  mutate(exposure = (pop + pop2) / 2)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
