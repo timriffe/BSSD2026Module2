@@ -63,7 +63,8 @@ $a_x$ has a meaning: it's the average years lived in the age interval by those t
 
 ```{r}
 mx_to_ax <- function(mx, age, sex = "f"){
-  ax <- case_when(
+    sex <- rep(sex[1], 111)
+    ax = case_when(
     age == 0 & sex == "m" & mx < 0.023 ~ 0.14929 - 1.99545 * mx,
     age == 0 & sex == "m" & mx >= 0.023 & mx < 0.08307 ~ 0.02832 + 3.26021 * mx,
     age == 0 & sex == "m" & mx >= 0.08307 ~ 0.29915,
@@ -77,10 +78,31 @@ mx_to_ax <- function(mx, age, sex = "f"){
 }
 ```
 
+# Exercise: write a function that does this:
 
+$$ q_x = \frac{m_x}{1 + (1 - a_x)\cdot m_x}$$
+The function arguments will be `mx` and `ax`. Just assume that you have a vector of `ax` for now. Or go ahead and make yourself some test data, like so:
 
+```{r}
+mx <- morty |> 
+  filter(sex == "female", year == 2000) |> 
+  pull(mx)
+ax <- mx_to_ax(mx,age=0:110, sex = rep("f",111))
+ax
+```
 
+```{r}
+mx_to_qx <- function(mx, ax){
+  qx <- mx / (1 + (1 - ax) * mx)
+  qx <- if_else(qx > 1, 1, qx)
+  return(qx)
+}
 
+qx <- mx_to_qx(mx, ax)
+qx
+```
+
+# next exercise
 
 
 
