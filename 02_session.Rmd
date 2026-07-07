@@ -102,7 +102,96 @@ qx <- mx_to_qx(mx, ax)
 qx
 ```
 
-# next exercise
+# Exercise:
+
+Make an lx function, whose argument is qx, and that scales to an arbitrary radix (ergo two arguments: qx, and radix).
+
+$$ \ell_{x+1} = \prod _0^{x} (1-q_x)\quad  \forall x > 0 $$
+And the very first value can be 1. And the whole thing can be scaled by `radix` (if you want).
+
+```{r}
+qx_to_lx <- function(qx, radix = 1){
+  lx <- cumprod(1 - qx)
+  # lx <- c(1, lx[-length(lx)])
+  lx <- dplyr::lag(lx, default = 1)
+  lx <- radix * lx
+  return(lx)
+}
+lx <- qx_to_lx(qx, radix = 1e5)
+```
+
+# next step
+
+$$ d_x = \ell_x - \ell_{x+1}$$
+
+$$ d_x = \ell_x q_x$$
+
+```{r}
+lxqx_to_dx <- function(lx, qx){
+  dx <- lx * qx
+  return(dx)
+}
+dx <- lxqx_to_dx(lx, qx)
+dx
+```
+
+Our first guesses at $e_0$:
+
+```{r}
+sum(lx) / 1e5 - .5
+age <- 0:110
+sum(dx * (age + ax)) / sum(dx)
+```
+
+# derive Lx
+
+easier to think about it way:
+$$ L_x = \ell_{x+1} + a_xd_x$$
+
+easier to program way:
+$$ L_x = \ell_x - (1-a_x)d_x$$
+
+$L_x$ can be thought of as lifetable exposure
+```{r}
+lxdx_to_Lx <- function(lx, dx, ax){
+  Lx <- lx - (1 - ax) * dx
+  return(Lx)
+}
+Lx <- lxdx_to_Lx(lx,dx,ax)
+mx2 <- dx / Lx
+sum(Lx)/lx[1]
+sum(Lx[-1])/lx[2]
+sum(Lx[-c(1:2)])/lx[3]
+```
+$$ T_x = \sum _{t=x} ^\omega L_t $$
+```{r}
+Lx_to_Tx <- function(Lx){
+  Tx <- Lx |> 
+    rev() |> 
+    cumsum() |> 
+    rev()
+  return(Tx)
+}
+Tx <- Lx_to_Tx(Lx)
+Tx / lx
+```
+
+# Challenge: calculate all the lifetables in `morty`
+
+To do this, you will start with morty, 
+and then filter out `sex == "total"` 
+and then declare groups by sex and year
+and then use our lifetable functions in order inside a single `mutate()` call
+and then remove the groups.
+
+Be brave, make some plots afterwards.
+
+
+
+
+
+
+
 
 
 
