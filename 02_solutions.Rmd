@@ -63,4 +63,39 @@ ESlt |>
 ```
 
 
+How could we use the new lifetable function(s)?
+
+```{r}
+ESlt <-
+morty |> 
+  filter(sex != "total") |> 
+  arrange(sex, year, age) |> 
+  # replaces NAs w value from lower age, only affects > 100
+  tidyr::fill(mx,
+              .direction = "down",
+              .by = c(sex, year)) |> 
+  mutate(
+    # hack only affects ages > 100
+      mx = if_else(mx == 0, .4, mx)) |> 
+  group_by(sex, year) |> 
+  group_modify(~lt_full(.x,.y,radix = 1)) |> 
+  ungroup()
+```
+
+```{r}
+ESlt <-
+morty |> 
+  filter(sex != "total") |> 
+  arrange(sex, year, age) |> 
+  # replaces NAs w value from lower age, only affects > 100
+  tidyr::fill(mx,
+              .direction = "down",
+              .by = c(sex, year)) |> 
+  mutate(
+    # hack only affects ages > 100
+      mx = if_else(mx == 0, .4, mx)) |> 
+  group_by(sex, year) |> 
+  group_modify(~lt_full2(.x,.y,radix = 1)) |> 
+  ungroup()
+```
 

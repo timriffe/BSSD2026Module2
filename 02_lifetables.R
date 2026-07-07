@@ -66,8 +66,8 @@ lt_full <- function(.x, .y, radix = 1){
   return(out)
 }
 
-
-lt_full2 <- function(age, mx, radix = 1, sex){
+# a different way to program it
+lt_full2_inner <- function(age, mx, radix = 1, sex){
       ax = mx_to_ax(mx = mx,
                     age = age, 
                     sex = sex)
@@ -82,17 +82,21 @@ lt_full2 <- function(age, mx, radix = 1, sex){
       ex = Tx / lx
  
     out <- tibble(age = age,
-             nx = nx,
-             mx = mx,
-             ax = ax,
-             qx = qx,
-             lx = lx,
-             dx = dx,
-             Lx = Lx,
-             Tx = Tx,
-             ex = ex)
+                  mx = mx,
+                  ax = ax,
+                  qx = qx,
+                  lx = lx,
+                  dx = dx,
+                  Lx = Lx,
+                  Tx = Tx,
+                  ex = ex)
     
     return(out)
       
 }
-
+lt_full2 <- function(.x,.y,radix){
+  lt_full2_inner(mx = .x$mx, 
+                 age = .x$age, 
+                 radix = radix, 
+                 sex = .y$sex)
+}
