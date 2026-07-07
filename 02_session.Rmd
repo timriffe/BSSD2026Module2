@@ -178,9 +178,9 @@ Tx / lx
 
 # Challenge: calculate all the lifetables in `morty`
 
-To do this, you will start with morty, 
+To do this, you will start with `morty`, 
 and then filter out `sex == "total"` 
-and then declare groups by sex and year
+and then declare groups by `sex` and `year`
 and then use our lifetable functions in order inside a single `mutate()` call
 and then remove the groups.
 
