@@ -1,0 +1,66 @@
+---
+title: "session 2 exercise solutions"
+author: "Tim Riffe"
+date: "2026-07-8"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+source("02_lifetables.R")
+morty <- read_csv("https://github.com/timriffe/BSSD2026Module2/raw/refs/heads/master/data/ES_mort.csv.gz",
+                  show_col_types = FALSE)
+```
+
+```{r}
+ESlt <-
+morty |> 
+  filter(sex != "total") |> 
+  arrange(sex, year, age) |> 
+  # replaces NAs w value from lower age, only affects > 100
+  tidyr::fill(mx,
+              .direction = "down",
+              .by = c(sex, year)) |> 
+  mutate(
+      mx = if_else(mx == 0, .4, mx), # hack only affects ages > 100
+      ax = mx_to_ax(mx = mx,
+                    age = age, 
+                    sex = first(sex)),
+      qx = mx_to_qx(mx = mx, 
+                    ax = ax),
+      lx = qx_to_lx(qx = qx, radix = 1),
+      dx = lx * qx,
+      Lx = lxdx_to_Lx(lx = lx,
+                      ax = ax,
+                      dx = dx),
+      Tx = Lx_to_Tx(Lx),
+      ex = Tx / lx,
+      .by = c(sex, year))
+```
+
+Some plots:
+
+Relationship between life expectancy at birth and infant mortality:
+```{r}
+ESlt |> 
+  filter(age == 0) |> 
+  ggplot(aes(x = ex,y=qx,color = sex, alpha = year))+
+  geom_point()
+```
+In recent years, you might even want to log $q_0$. For a long time, life expectancy improvement was driven by improvements in infant mortality, but nowadays it comes from a wider range of higher ages.
+
+How about just $e_0$ by itself?
+
+```{r}
+ESlt |> 
+  filter(age == 0) |> 
+  ggplot(aes(x = year, y = ex, color = sex)) +
+  geom_line()
+```
+
+
+
