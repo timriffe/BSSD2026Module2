@@ -1,0 +1,104 @@
+---
+title: "day 2 session script"
+author: "Tim Riffe"
+date: "2026-07-07"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Today: lifetables and functions
+
+let's see the 
+`cumsum()`: makes a cumulative sum
+`cumprod()`: makes a cumulative product
+`rev()`: flips a vector
+```{r}
+x <- 1:10
+
+cumsum(x)
+cumprod(x)
+rev(x)
+rev(x) |> cumsum()
+```
+
+Anatomy of a function
+
+```{r}
+my_fun <- function(a, b){
+  # the body of the function, where
+  # things happen using the arguments
+  
+  # This is arbitrary code, just to show you
+  # can use the args and other functions at-will
+  d <- cumsum(a)
+  bb <- cumprod(b)
+  
+  result <- sum(bb * d)
+  # the only things allowed out of here are
+  # what you explicitly return at the end.
+  return(result)
+}
+my_fun(a = runif(10), b = sort(rnorm(10)))
+```
+# read in the data
+
+<https://tinyurl.com/6ec2zfyy>
+```{r}
+library(tidyverse)
+morty <- read_csv("https://github.com/timriffe/BSSD2026Module2/raw/refs/heads/master/data/ES_mort.csv.gz",
+                  show_col_types = FALSE)
+```
+
+# Step 1
+
+To calculate condition probabilities, $q_x$, we start with $m_x$ and an instrumental lifetable column denoted $a_x$.
+
+This is valid for single-age intervals
+$$ q_x = \frac{m_x}{1 + (1 - a_x)\cdot m_x}$$
+
+$a_x$ has a meaning: it's the average years lived in the age interval by those that die in the interval.
+
+```{r}
+
+mx_to_ax <- function(mx, age, sex = "f"){
+  ax <- case_when(
+    age == 0 & sex == "m" & mx < 0.023 ~ 0.14929 - 1.99545 * mx,
+    age == 0 & sex == "m" & mx >= 0.023 & mx < 0.08307 ~ 0.02832 + 3.26021 * mx,
+    age == 0 & sex == "m" & mx >= 0.08307 ~ 0.29915,
+    age == 0 & sex == "f" & mx < 0.01724 ~ 0.14903 - 2.05527 * mx,
+    age == 0 & sex == "f" & mx >= 0.01724 & mx < 0.06891 ~ 0.04667 + 3.88089 * mx,
+    age == 0 & sex == "f" & mx >= 0.06891 ~ 0.31411,
+    age == max(age) ~ 1/mx,
+    TRUE ~ 0.5
+  )
+  return(ax)
+}
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

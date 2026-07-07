@@ -31,6 +31,7 @@ E <-
   select(year, age, female1, female2) |> 
   mutate(exposure = (female1 + female2) / 2) |> 
   select(!starts_with("fem"))
+
 ```
 ## merge
 ```{r}
@@ -40,6 +41,7 @@ Fx <-
   select(year, age, births = total) |> 
   left_join(E, by = join_by(year, age)) |> 
   mutate(Fx = births / exposure)
+head(Fx)
 ```
 
 # 2. Calculate the General Fertility Rate, GFR
@@ -49,8 +51,8 @@ gfr <-
   Fx |> 
   filter(between(age,15,49)) |> 
   #filter(age >= 15 & age <= 49)
-  group_by(year) |> 
-  summarize(GFR = 1000 * sum(births)/sum(exposure)) 
+  summarize(GFR = 1000 * sum(births)/sum(exposure), 
+            .by = year) 
 ```
 Curious about the trend?
 ```{r}
@@ -86,14 +88,15 @@ I'll just pipe it straight to a plot
 ```{r}
 Fx |> 
   group_by(year) |> 
-  summarize(TFR = sum(Fx),
-            B = sum(births)) |> 
+  summarize(TFR = sum(Fx)) |> 
   ggplot(aes(x = year, y = TFR)) +
   geom_line() +
   geom_vline(xintercept = c(1936,1939))
 ```
 
 5. calculate  MAB
+
+$$ \bar{x} = \frac{\sum x_i * w_i}{\sum w_i}$$
 
 $$ MAB = \frac{\sum F_x \cdot (x + .5)}{\sum F_x}$$
 
