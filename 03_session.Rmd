@@ -1,0 +1,112 @@
+---
+title: "session 2 notes"
+author: "Tim Riffe"
+date: "2026-07-08"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Ready to go!
+
+# filter down to just countries
+```{r}
+library(tidyverse)
+library(countrycode) # install.packages("countrycode")
+wpp <- read_csv("data/mxwpp.csv.gz")
+wpp <-
+  wpp |> 
+  mutate(iso3 = countrycode(sourcevar = un_code,
+                            origin = "un",
+                            destination = "iso3c")) |> 
+  filter(!is.na(iso3))
+
+```
+
+# Challenge: 
+Calculate the lifetables using our functions in `02_lifetables.R` (the `lt_full()` function specifically), just like we did in the exercise solutions. The groups in the data are unique combinations of iso3, sex, and year. This might take a while to run, sorry.
+
+
+```{r}
+source("02_lifetables.R")
+wpp_lt <-
+  wpp |> 
+  group_by(iso3, sex, year) |> 
+  group_modify(~lt_full(.x, .y, radix = 1)) |> 
+  ungroup()
+```
+
+
+# took timeout to talk about CDR as weighted mean
+
+Approach 1: add up the deaths, and add up the exposures, then take the ratio
+```{r}
+ES <- read_csv("data/ES_mort.csv.gz")
+
+ES |> 
+  summarize(D = sum(deaths),
+            E = sum(exposure), 
+            .by = c(sex, year)) |> 
+  mutate(CDR = D / E)
+```
+
+Approach 2:
+Treat CDR as weighted mean
+
+$$\bar{x} = \frac{\sum w_ix_i}{\sum w_i}$$ 
+
+Identical to:
+$$ p_i = \frac{w_i}{\sum w_i}$$
+$$ \bar{x} = \sum p_i x_i$$
+$$m_x = \frac{D_x}{E_x}$$
+
+$$ \frac{\sum D_x}{\sum E_x} =  \frac{\sum m_xE_x}{\sum E_x}$$
+
+
+```{r}
+ES |> 
+  mutate(
+    px = exposure / sum(exposure, na.rm = TRUE), 
+         .by = c(year, sex)) |> 
+  summarize(CDR = 1000*sum(exposure * mx, na.rm = TRUE) / sum(exposure, na.rm = TRUE),
+            CDR2 = 1000*sum(px * mx, na.rm = TRUE),
+            .by = c(year, sex)) |> 
+  filter(year %in% c(1908, 2023))
+```
+
+# Standardization:
+
+```{r}
+standards <- read_csv("data/standards_abridged.csv")
+standards |> 
+  ggplot(aes(x = age, y = pop, color = standard)) + 
+  geom_step()
+```
+
+We have two problems using these standards with single age data. First, the standard comes in age groups, and second, the age range is different than our data. The standard thing to do is to treat the standard as a step function. That means that if a given age class is 5 years wide, that we can simply divide the value of the standard in that age class by 5 and assign the result to each of the single ages falling in that class. Programmatically, it might look like so:
+
+```{r}
+
+age_abr <- standards |> 
+  pull(age) |> 
+  unique()
+nx = case_when(age_abr == 0 ~ 1,
+               age_abr == 1 ~ 4,
+               age_abr == 90 ~ 11,
+               TRUE ~ 5)
+age_table <- tibble(age_single = 0:100,
+                    age = rep(age_abr, times = nx),
+                    nx = rep(nx, times = nx))
+
+standards |> 
+  right_join(age_table, by = join_by(age)) |> 
+  mutate(pop = pop / nx)
+```
+
+
+
+
+
+

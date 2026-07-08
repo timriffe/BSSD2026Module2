@@ -11,14 +11,20 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(tidyverse)
-source("https://raw.githubusercontent.com/timriffe/BSSD2025Module2/refs/heads/master/02_lifetables.R")
+source("https://raw.githubusercontent.com/timriffe/BSSD2026Module2/refs/heads/master/02_lifetables.R")
 morty <- read_csv("https://github.com/timriffe/BSSD2026Module2/raw/refs/heads/master/data/ES_mort.csv.gz",
                   show_col_types = FALSE)
 ```
 
 ```{r}
-ESlt <-
 morty |> 
+  filter(year == 1908, sex == "male") |> View()
+```
+
+
+```{r}
+ESlt <-
+  morty |> 
   filter(sex != "total") |> 
   arrange(sex, year, age) |> 
   # replaces NAs w value from lower age, only affects > 100
@@ -82,20 +88,18 @@ morty |>
   ungroup()
 ```
 
+
+# priming for decomposition
 ```{r}
-ESlt <-
-morty |> 
-  filter(sex != "total") |> 
-  arrange(sex, year, age) |> 
-  # replaces NAs w value from lower age, only affects > 100
-  tidyr::fill(mx,
-              .direction = "down",
-              .by = c(sex, year)) |> 
-  mutate(
-    # hack only affects ages > 100
-      mx = if_else(mx == 0, .4, mx)) |> 
-  group_by(sex, year) |> 
-  group_modify(~lt_full2(.x,.y,radix = 1)) |> 
-  ungroup()
+ESlt |> 
+  filter(year == max(year)) |> 
+  ggplot(mapping = aes(x = age, y = dx, color = sex)) +
+  geom_line()
 ```
+
+
+
+
+
+
 
