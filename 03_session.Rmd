@@ -242,7 +242,7 @@ dec |>
  
 # Challenge:
  
-Make a function `mx_to_e0()` (modelled on our function `mx_to_sd()`) and decompose the sex gap in life expectancy at birth in some year, using the horiuchi method. Make a plot of the age-specific contributions to the gap and interpret it.
+Make a function `mx_to_e0()` (modeled on our function `mx_to_sd()`) and decompose the sex gap in life expectancy at birth in some year, using the horiuchi method. Make a plot of the age-specific contributions to the gap and interpret it.
  
  
  
