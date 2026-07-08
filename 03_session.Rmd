@@ -88,7 +88,6 @@ standards |>
 We have two problems using these standards with single age data. First, the standard comes in age groups, and second, the age range is different than our data. The standard thing to do is to treat the standard as a step function. That means that if a given age class is 5 years wide, that we can simply divide the value of the standard in that age class by 5 and assign the result to each of the single ages falling in that class. Programmatically, it might look like so:
 
 ```{r}
-
 age_abr <- standards |> 
   pull(age) |> 
   unique()
