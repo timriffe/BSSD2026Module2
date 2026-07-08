@@ -98,8 +98,8 @@ nx = case_when(age_abr == 0 ~ 1,
 age_table <- tibble(age_single = 0:100,
                     age = rep(age_abr, times = nx),
                     nx = rep(nx, times = nx))
-
-standards |> 
+eu_standard <-
+  standards |> 
   right_join(age_table, 
              by = join_by(age),
              relationship = "many-to-many") |> 
@@ -107,9 +107,95 @@ standards |>
   select(standard,
          age = age_single,
          pop) |> 
-  group_by(standard) |> 
-  summarize(check = sum(pop))
+  filter(grepl(pattern = "European", x = standard)) |> 
+  select(-standard)
+  # filter(standard == "European (EU-27 plus EFTA 2011-2030) Std Million")
+  # group_by(standard) |> 
+  # summarize(check = sum(pop)) |> 
 ```
+
+Challenge: age-standardize either the wpp or the Spanish mortality series. The steps are to start with the mortality dataset, then `left_join` the `eu_standard` (or a different one if you want) by `age`, then group by `sex`, `year` (and also `iso3` if using wpp), then calculate the age-standardized mortality rate inside `summarize()`, using the sum-product of `pop` and `mx` (recall `pop` sums to 1 already). Inside said `sum()`, you may want to include the argument `na.rm = TRUE` if using the Spanish dataset.
+
+```{r}
+CDRstd <- ES |> 
+  filter(age <= 100) |> 
+  # join european standard
+  left_join(
+    eu_standard,
+    by = join_by(age)
+  ) |> 
+  # computing standardized cdr
+  summarise(
+    SDR = sum(mx * pop, na.rm = TRUE),
+    .by = c(year, sex))
+```
+
+plot these:
+```{r}
+CDRstd |> 
+  filter(sex != "total") |> 
+  ggplot(aes(x = year, y = SDR, color = sex)) +
+  geom_line()
+```
+
+I noted here the following relationship in lifetables:
+The age standardized rate of the lifetable uses the survival curve ($L_x$, I guess) is equal to $1/e_0$. So, sooo, if you imagined up an exercise like: age standardize a mortality and then take the inverse (it's units can be thought of as years of life) then you you'll know whether the values themselves (of SDR) carry much meaning.
+
+```{r}
+CDRstd |> 
+  filter(sex != "total") |> 
+  ggplot(aes(x = 1 / SDR, fill = sex)) +
+  geom_density(alpha = .5)
+```
+
+Here we see values that are way outside the plausible range, so all this tells us is that the actual units of the SDR don't transmit the same level of meaning as a fully calculated life table.
+
+# Decomposition
+
+If we want to compare two CDRs, then we can standardize the rates using the average structure (direct standardization) or we can standardize the structure using the average rates (indirect standardization). Or, instead of standardizing those quantities, we could standardize the **differences** in rates and the **differences** in structure. If we do this, the sum of those two standardized differences is equal to the gap in CDR.
+
+Formally: the difference in CDR can be split into two pieces. 
+
+A rate-difference component:
+$$ \Delta^{rates} = \sum\frac{1}{2}(str^1 + str^2) \cdot (m_x^2 - m_x^1)$$
+And a structure difference component:
+$$ \Delta^{str} = \sum\frac{1}{2}(m_x^1 + m_x^2) \cdot (str^2 - str^1)$$
+And then we have that:
+$$ \Delta = CDR^2 - CDR^1 = \Delta^{str} + \Delta^{rates} $$
+This is called Kitagawa decomposition. Many kinds of decomposition relate to this basic pattern.
+
+```{r}
+lt_sd <- function(dx, age, ax){
+  dx       <- dx / sum(dx)
+  age_mid  <- age + ax
+  e0       <- sum(dx * age_mid)
+  distance <- age_mid - e0
+  lt_var   <- sum(distance ^ 2 * dx)
+  sd_lt    <- sqrt(lt_var)
+  return(sd_lt)
+}
+```
+Test it:
+
+```{r}
+ESlt |> 
+  summarize(sd = lt_sd(dx, age, ax),
+            e0 = first(ex),
+           .by = c(year, sex)) |> 
+  ggplot(aes(x = e0, y = sd, color = sex)) +
+  geom_point()
+```
+
+
+
+
+
+
+
+
+
+
+
 
 
 
