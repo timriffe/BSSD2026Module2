@@ -100,8 +100,15 @@ age_table <- tibble(age_single = 0:100,
                     nx = rep(nx, times = nx))
 
 standards |> 
-  right_join(age_table, by = join_by(age)) |> 
-  mutate(pop = pop / nx)
+  right_join(age_table, 
+             by = join_by(age),
+             relationship = "many-to-many") |> 
+  mutate(pop = pop / nx) |> 
+  select(standard,
+         age = age_single,
+         pop) |> 
+  group_by(standard) |> 
+  summarize(check = sum(pop))
 ```
 
 
