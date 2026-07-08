@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(tidyverse)
-source("02_lifetables.R")
+source("https://raw.githubusercontent.com/timriffe/BSSD2025Module2/refs/heads/master/02_lifetables.R")
 morty <- read_csv("https://github.com/timriffe/BSSD2026Module2/raw/refs/heads/master/data/ES_mort.csv.gz",
                   show_col_types = FALSE)
 ```
