@@ -4,7 +4,7 @@ mx_to_ax <- function(mx, age, sex = "f"){
     substr(1,1) |> 
     tolower()
   # -----
-  sex <- rep(sex[1], 111)
+  sex <- rep(sex[1], length(mx))
   ax = case_when(
     age == 0 & sex == "m" & mx < 0.023 ~ 0.14929 - 1.99545 * mx,
     age == 0 & sex == "m" & mx >= 0.023 & mx < 0.08307 ~ 0.02832 + 3.26021 * mx,
@@ -65,6 +65,18 @@ lt_full <- function(.x, .y, radix = 1){
       ex = Tx / lx) 
   return(out)
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 # a different way to program it
 lt_full2_inner <- function(age, mx, radix = 1, sex){
