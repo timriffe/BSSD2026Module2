@@ -89,6 +89,7 @@ dec |>
 Interpretation: female life expectancy was 5-6 years higher than male life expectancy in both years. In 1980, male excess infant mortality contributed 3 months to the gap, but this shrank to about 1 week by 2023. Remember a month is ca 1/12 of a year, which is the red line. That might help make sense of these values. Here, for the sake of higher ages, let's group the results to 10-year bins. Remember, decompositions are additive like this:
 
 ```{r}
+
 dec |> 
   mutate(age10 = age - age %% 10) |> 
   summarize(deltax = sum(deltax),
