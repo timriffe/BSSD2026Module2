@@ -68,16 +68,25 @@ The fertility top row of the matrix has different pieces in it.
 1. we need to average fertility rates between consecutive ages, to match how one age class moves into the next one in a projection.
 2. we need to discount for the survival of women.
 3. the births themselves need a discount to make it to the end of the year.
+4. we need to split out girl births from the total by assuming some SRB
 ```{r}
-
+SRB <- 1.05
+PF <- 1 / (1 + SRB)
 asfr <-
-ES2014 |> 
+  ES2014 |> 
   filter(sex == "female") |> 
   mutate(exposure = (pop1 + pop2) / 2) |> 
   select(age, exposure) |> 
   left_join(B |> select(-sex), by = join_by(age)) |> 
   mutate(births = if_else(is.na(births), 0, births),
-         asfr = births / exposure)
+         asfr = PF * births / exposure,
+         asfr2 = lead(asfr, default = 0),
+         asfr = (asfr + asfr2) / 2) |> 
+  pull(asfr)
+
+L0 <- Lx |> pull(Lx) |> first()
+top_row <- asfr * L0 * c(Sx,0)
+Les[1, ] <- rop_row
 ```
 
 
