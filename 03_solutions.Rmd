@@ -1,0 +1,119 @@
+---
+title: "session 3 exercise solutions"
+author: "Tim Riffe"
+date: "2026-07-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Challenge:
+ 
+Make a function `mx_to_e0()` (modeled on our function `mx_to_sd()`) and decompose the sex gap in life expectancy at birth in some year, using the horiuchi method. Make a plot of the age-specific contributions to the gap and interpret it.
+ 
+```{r}
+library(tidyverse)
+source("https://raw.githubusercontent.com/timriffe/BSSD2026Module2/refs/heads/master/02_lifetables.R")
+ES <- read_csv("data/ES_mort.csv.gz") |> 
+  tidyr::fill(mx,
+              .direction = "down",
+              .by = c(sex, year)) |> 
+  mutate(
+      mx = if_else(mx == 0, .4, mx)) 
+```
+
+Make a function that takes a vector of $m_x$ and returns just a scalar of $e_0$
+
+This function is set up to do this weird averaging step because the task at hand is to decompose a sex gap, and the letter `"f"` or `"m"` would otherwise need to be a parameter. (There is actually a better way to do it than this, but I just don't think it's worth it. That would work more or less like so: (1) make the parameter of mx also include the $a_0$ returned by Andreev-Kingkade's method. So it'd be one parameter longer. Easy peasy actually. (2) In the result, there will be a tiny contribution from $a_0$ and a more substantial contribution from $m_0$. Add them up and call it the age 0 contribution. )
+```{r}
+mx_to_e0 <- function(mx){
+  dat    <- tibble(mx, age = 0:(length(mx)-1))
+  ltf    <- lt_full(.x = dat, .y = tibble(sex = "f")) 
+  ltm    <- lt_full(.x = dat, .y = tibble(sex = "m")) 
+  e0m    <- ltm |> pull(ex) |> first()
+  e0f    <- ltf |> pull(ex) |> first()
+  e0_out <- (e0m + e0f) / 2
+  return(e0_out)
+}
+```
+
+Decompose in 1980 and in 2023 just to see:
+
+```{r}
+library(DemoDecomp)
+dec <- 
+  ES |> 
+  filter(year %in% c(1980, 2023),
+         sex != "total") |> 
+  select(-exposure,-deaths) |> 
+  pivot_wider(names_from = sex, values_from = mx) |> 
+  group_by(year) |> 
+  mutate(deltax = horiuchi(func = mx_to_e0, 
+                           pars1 = male, 
+                           pars2 = female, 
+                           N = 20)) |> 
+  ungroup()
+```
+
+Check sums:
+```{r}
+ES |> 
+  filter(year %in% c(1980, 2023),
+         sex != "total") |> 
+  group_by(year,sex) |> 
+  group_modify(~lt_full(.x,.y,radix=1)) |> 
+  ungroup() |> 
+  filter(age == 0) |> 
+  select(year,sex,ex) |> 
+  pivot_wider(names_from = sex, values_from = ex) |> 
+  mutate(gap = female - male)
+```
+```{r}
+dec |> 
+  summarize(Delta = sum(deltax), .by = year)
+```
+
+
+Plot and interpret:
+
+```{r}
+dec |> 
+  ggplot(aes(x = age, y = deltax)) +
+  geom_col(width = 1) +
+  facet_wrap(~year) +
+  geom_hline(yintercept = 1/12, color = "red")
+```
+
+Interpretation: female life expectancy was 5-6 years higher than male life expectancy in both years. In 1980, male excess infant mortality contributed 3 months to the gap, but this shrank to about 1 week by 2023. Remember a month is ca 1/12 of a year, which is the red line. That might help make sense of these values. Here, for the sake of higher ages, let's group the results to 10-year bins. Remember, decompositions are additive like this:
+
+```{r}
+dec |> 
+  mutate(age10 = age - age %% 10) |> 
+  summarize(deltax = sum(deltax),
+            .by = c(year,age10)) |> 
+  ggplot(aes(x = age10+5, y = deltax)) +
+  geom_col(width = 10) +
+  facet_wrap(~year) +
+  geom_vline(xintercept = 65,color="red")
+```
+So we see that rate differences beyond age 50 are implying an extra year (or more) of gap per age decade. The age-distribution of the gap itself has somehow compressed more in older ages. If you were to look at rate ratios in younger ages, you'd probably still note a sizable gender gap, but rates are probably just so low in young ages nowadays that it no longer makes a huge contribution to $e_0$ differences. Most of the gap is now coming **after** typical retirement ages (vertical red lines), whereas 40 years ago it was the other way around. Had we looked at rate ratios to describe the inequality, this is what we would have seen:
+
+```{r}
+ES |> 
+  select(-exposure, -deaths) |> 
+  filter(year %in% c(1980,2023)) |> 
+  pivot_wider(names_from = sex, values_from = mx) |> 
+  mutate(rr = male / female) |> 
+  ggplot(aes(x = age, y = rr, color = as.factor(year))) +
+  geom_line() +
+  scale_y_log10()
+```
+
+See what I mean? In their 20s, males can have ca 3 times higher mortality than females, it's just that rates are so low that the impact on life expectancy is comparatively low. Beyond age 60 (now beyond age 75), rates are actually converging, but since they're so high (recall Gompertz exponential growth), it still translates to a gap in years fo life. I recommend examining inequalities from multiple angles as one metric can mask variation seen in another.
+
+
+
+
+
