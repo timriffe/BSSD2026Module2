@@ -85,22 +85,79 @@ asfr <-
   pull(asfr)
 
 L0 <- Lx |> pull(Lx) |> first()
+                      # TR: decided to discount mother
+                      # mort by 2, since it's possible
+                      # to give birth and then die in 
+                      # same year
 top_row <- asfr * L0 * (1 - ((1-c(Sx,0)) / 2))
-Les[1, ] <- rop_row
+Les[1, ] <- top_row
 ```
 
+We can extract the "intrinsic" growth rate $r$ from the Leslie matrix, which just exploits standard eigen analysis, which is a rather technical topic for a course like this, but just to point out, it's a predetermined property of the demographic parameters themselves. And this is now demonstrated because we were somehow able to extract it from the Leslie matrix all by itself.
+```{r}
+r <- eigen(Les)$values |> first() |> Re() |> log()
+```
 
+How to do the mechanical projection
+```{r}
+P0 <- 
+  P |> 
+  filter(sex == "female") |> 
+  pull(pop2)
+plot(0:110,P0,type='l')
+lines(0:110,Les %*% P0,col="red")
+lines(0:110,Les %*% (Les %*% P0),col="blue")
 
+Les %*% (Les %*% P0) 
+(Les %*% Les) %*% P0
 
+library(expm) # install.packages("expm")
+ (Les %^% 10) %*% P0
+```
 
+Now demonstrate the long horizon projection using tidy tricks:
 
+```{r}
+horizon <- tibble(h = 0:200)
+Pt <- 
+  P |> 
+  filter(sex == "female") |> 
+  select(age, P0 = pop2) |> 
+  cross_join(horizon) |> 
+  arrange(h, age) |> 
+  mutate(Pt = (Les %^% first(h)) %*% P0,
+         .by = h)
+```
 
+How does the population structure stabilize in 20-year time steps:
 
+```{r}
+Pt |> 
+  filter(h %% 20 == 0) |> 
+  mutate(Cx = Pt / sum(Pt),
+         .by = h) |> 
+  ggplot(aes(x = age, y = Cx, color = h, group = h)) +
+  geom_line() +
+  scale_color_binned_sequential(begin = .5) +
+  geom_line(data = Pt |> 
+  filter(h == 0) |> 
+  mutate(Cx = Pt / sum(Pt)), color = "red") +
+  geom_line(data = Lx |> mutate(Cx = Lx * exp(-r*(age+.5)),
+                                Cx = Cx / sum(Cx),
+                                h=200), color = "black", linewidth = 2)
+```
 
+```{r}
+Pt |> 
+  summarize(Pt = sum(Pt), .by = h) |> 
+  mutate(CGR = log(dplyr::lead(Pt)/Pt)) |> 
+  ggplot(aes(x = h, y = CGR)) +
+  geom_line() +
+  geom_hline(yintercept = r, color = "red")
+```
 
-
-
-
+# Challenge:
+See if the path to stability is different, or how it's different if we specify a wider or tighter fertility distribution. In terms of total perturbation of the route or maybe deviation sizes or smoothness or the width of the wiggles, etc.
 
 
 
