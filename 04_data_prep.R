@@ -1,19 +1,22 @@
 library(tidyverse)
 library(readr)
 library(janitor)
+
+root_path <- if_else(file.exists("data/ES_B2014.csv"),"","https://raw.githubusercontent.com/timriffe/BSSD2026Module2/master/")
+
 source("https://raw.githubusercontent.com/timriffe/BSSD2026Module2/master/02_lifetables.R")
-B <- read_csv("https://raw.githubusercontent.com/timriffe/BSSD2026Module2/master/data/ES_B2014.csv", show_col_types = FALSE) |> 
+B <- read_csv(paste0(root_path,"data/ES_B2014.csv"), show_col_types = FALSE) |> 
   mutate(sex = "total") |> 
   select(age, sex, births = total) 
 
-D<- read_csv("https://raw.githubusercontent.com/timriffe/BSSD2026Module2/master/data/ES_D2014.csv", show_col_types = FALSE) |> 
+D<- read_csv(paste0(root_path,"data/ES_D2014.csv"), show_col_types = FALSE) |> 
   filter(year == 2014) |> 
   select(-open_interval) |> 
   pivot_longer(female:total, 
                names_to = "sex", 
                values_to = "deaths")
 
-P <- read_csv("https://raw.githubusercontent.com/timriffe/BSSD2026Module2/master/data/ES_P.csv.gz", show_col_types = FALSE) |> 
+P <- read_csv(paste0(root_path,"data/ES_P.csv.gz"), show_col_types = FALSE) |> 
   clean_names() |> 
   select(-open_interval) |> 
   filter(year== 2014) |> 
