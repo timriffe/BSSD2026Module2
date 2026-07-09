@@ -85,7 +85,7 @@ asfr <-
   pull(asfr)
 
 L0 <- Lx |> pull(Lx) |> first()
-top_row <- asfr * L0 * c(Sx,0)
+top_row <- asfr * L0 * (1 - ((1-c(Sx,0)) / 2))
 Les[1, ] <- rop_row
 ```
 
