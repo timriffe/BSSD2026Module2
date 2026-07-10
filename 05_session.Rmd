@@ -96,13 +96,67 @@ Get drift parameters and do the line projection
 years <- mx |> pull(year) |> unique() |> sort()
 drift <- (kappat[length(kappat)] - kappat[1]) / ((2014 - 1950) - 1)
 
-horizon <- -64:30
+horizon <- 1:30
 kappat_hat <- horizon * drift + kappat[length(kappat)]
-
-plot(horizon, kappat_hat, type = 'l')
-points(-64:0, kappat)
+kappa_all <- c(kappat, kappat_hat)
+plot(kappa_all, type = 'l')
 ```
 
+Build tibbles and put the pieces together
+
+```{r}
+kappa <-
+  tibble(year =1950:2044,
+         kappat = kappa_all)
+
+beta <- tibble(age = 0:100,betax)
+
+lc <- cross_join(kappa, beta) |> 
+  left_join(alpha, by = join_by(age)) |> 
+  mutate(mx = exp(alphax + betax * kappat))
+```
+Visualize the predictions:
+
+```{r}
+lc |> 
+  ggplot(aes(x = year, y = age, z = log(mx))) +
+  geom_contour_filled()
+
+lc |> 
+  filter(year > 2014) |> 
+  ggplot(aes(x = age, y = mx, color = year, group = year)) +
+  geom_line() +
+  scale_y_log10()
+```
+
+Calculate lifetables for the LC prediction (the smooth kappa one)
+Make a plot of life expectancy at birth.
+```{r}
+LTlc <- lc |> 
+  mutate(sex = "female") |>
+  group_by(year, sex) |>
+  group_modify(~lt_full(.x,.y,radix = 1)) |> 
+  ungroup()
+LTlc |> 
+  filter(age == 0) |> 
+  ggplot() +
+  aes(x = year, y = ex) +
+  geom_line()
+
+
+```
+Contrast w period $e_0$ 1950-2014
+```{r}
+mx |> 
+  mutate(sex = "female") |>
+  group_by(year, sex) |>
+  group_modify(~lt_full(.x,.y,radix = 1)) |> 
+  filter(age == 0) |> 
+   ggplot() +
+  aes(x = year, y = ex) +
+  geom_point(color = "red") + 
+  geom_line(data = LTlc |> filter(age == 0) )
+```
 
 
 
