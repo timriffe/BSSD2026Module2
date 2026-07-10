@@ -183,7 +183,7 @@ Ken Wachter:
 Keyfitz applied mathematical demography
 <https://link.springer.com/book/10.1007/978-1-4757-1879-9>
 
-Online resources:
+Online resources: (r packages for methods, reproducibility packs, workshop materials)
 <https://github.com/OpenScienceDemography>
 
 
