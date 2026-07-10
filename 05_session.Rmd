@@ -20,6 +20,8 @@ source("https://raw.githubusercontent.com/timriffe/BSSD2026Module2/refs/heads/ma
 
 ```{r}
 mx <- read_csv("https://raw.githubusercontent.com/timriffe/BSSD2026Module2/refs/heads/master/data/ESmx.csv.gz")
+
+start_year <- 1970
 ```
 
 # look at the surface:
@@ -34,6 +36,7 @@ mx |>
 ```{r}
 alpha <-
   mx |> 
+  filter(year >= start_year) |> 
   summarize(alphax = mean(log(mx)),
             .by = age)
 mx |> 
@@ -49,6 +52,7 @@ mx |>
 ```{r}
 clmx <- 
   mx |> 
+  filter(year >= start_year) |> 
   left_join(alpha, by = join_by(age)) |> 
   mutate(lmx = log(mx),
          clmx = lmx - alphax)
@@ -94,7 +98,7 @@ kappat <- V[,1] * d[1] * sum(U[,1])
 Get drift parameters and do the line projection 
 ```{r}
 years <- mx |> pull(year) |> unique() |> sort()
-drift <- (kappat[length(kappat)] - kappat[1]) / ((2014 - 1950) - 1)
+drift <- (kappat[length(kappat)] - kappat[1]) / ((2014 - start_year) - 1)
 
 horizon <- 1:30
 kappat_hat <- horizon * drift + kappat[length(kappat)]
@@ -106,7 +110,7 @@ Build tibbles and put the pieces together
 
 ```{r}
 kappa <-
-  tibble(year =1950:2044,
+  tibble(year =start_year:2044,
          kappat = kappa_all)
 
 beta <- tibble(age = 0:100,betax)
@@ -158,6 +162,29 @@ mx |>
   geom_line(data = LTlc |> filter(age == 0) )
 ```
 
+Here are some packages with out-of-the-box mortality forecasting options:
+
+`demography`, `forecast`, `StMoMo`.
+
+Books:
+Data Visualization:
+<https://kieranhealy.org/publications/dataviz/>
+
+Intro Demography text:
+Preston book:
+<https://www.wiley.com/en-us/shop/general-introductory-history/demography-measuring-and-modeling-population-processes-p-9781557864512>
+
+Pressat book:
+<https://archive.org/details/demographicanaly0000pres_l0b4>
+
+Ken Wachter:
+<https://www.hup.harvard.edu/books/9780674045576>
+
+Keyfitz applied mathematical demography
+<https://link.springer.com/book/10.1007/978-1-4757-1879-9>
+
+Online resources:
+<https://github.com/OpenScienceDemography>
 
 
 
