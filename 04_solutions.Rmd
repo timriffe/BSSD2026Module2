@@ -45,7 +45,6 @@ asfr <-
   pull(asfr)
 
 
-
 L0      <- Lx |> pull(Lx) |> first()
 survival_part <- L0 * (1 - ((1-c(Sx,0)) / 2))
 ```
@@ -61,6 +60,13 @@ Les1[1, ] <- asfr * survival_part
 Les2[1, ] <- asfr_narrow * survival_part
 Les3[1, ] <- asfr_wide * survival_part
 ```
+ 
+```{r}
+cbind(asfr, asfr_narrow, asfr_wide) |> 
+  matplot(type = 'l')
+```
+ 
+ 
  Apply:
 ```{r}
 horizon <- tibble(h = 0:500)
